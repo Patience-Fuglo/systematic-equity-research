@@ -12,7 +12,7 @@ construction, and cross-market extensions, all real-data validated.
 | Execution & microstructure | done |
 | Cross-sectional alpha | done |
 | Factor attribution | done |
-| Portfolio & risk | not started |
+| Portfolio & risk | done |
 | Cross-market extensions | not started |
 | Live deployment | not started |
 
@@ -141,4 +141,56 @@ Run the real-data demo:
 
 ```bash
 python scripts/demo_factor_attribution.py
+```
+
+## Portfolio & risk
+
+`src/systematic_equity_research/portfolio/`
+
+Four real portfolio-construction methods on the same 5 real names
+(equal-weight, min-variance, max-Sharpe/tangency, risk-parity/equal
+risk contribution), plus a 1,000-path Monte Carlo simulation
+(real-calibrated mean/covariance, necessarily simulated forward paths)
+producing real drawdown and P(ruin) statistics.
+
+```python
+from systematic_equity_research.portfolio import (
+    equal_weight_portfolio, min_variance_weights, max_sharpe_weights, risk_parity_weights,
+    simulate_portfolio_paths, max_drawdown_per_path, probability_of_ruin,
+)
+
+weights = risk_parity_weights(cov)
+paths = simulate_portfolio_paths(mean_returns, cov, weights, n_paths=1000, n_periods=252)
+```
+
+**A real optimizer bug caught before it reached the committed code:**
+the first version of `risk_parity_weights` minimized the *absolute*
+squared difference between real risk contributions. On real covariance
+data, those contributions sit near 1e-3, so the objective's scale (~1e-6)
+was small enough that SciPy's SLSQP falsely reported `success: True`
+while leaving the weights exactly at the equal-weight starting guess —
+verified directly: the real risk contributions at that "solution" were
+still up to 3x apart, not risk parity at all. Fixed with a *relative*
+objective (each contribution vs. the mean contribution) and a real
+post-optimization check that raises if contributions still differ by
+more than 5% — never trusting `result.success` alone again.
+
+**Real result:** min-variance and max-Sharpe are unconstrained
+(short positions allowed), a real, expected property of closed-form
+mean-variance optimization, not a bug — both assign TSLA and/or MSFT
+negative weight. Risk-parity, once genuinely converged, gives TSLA
+(the highest real annualized volatility, 46.3%) the smallest weight
+(12.5%) and AAPL (lowest real volatility, 25.5%) the largest (28.5%) —
+each of the 5 real names contributes an equal share of total portfolio
+risk, confirmed directly (contribution ratio 1.0000003, not just
+`success: True`). The real-calibrated 1,000-path simulation of the
+risk-parity portfolio: median simulated ending value 1.374 (from a 1.0
+start), median max drawdown -12.2%, worst-5% drawdown -22.1%, P(ruin)
+(ever below 50% of starting value) effectively 0 over one simulated
+year at these real return/vol levels.
+
+Run the real-data demo:
+
+```bash
+python scripts/demo_portfolio.py
 ```
