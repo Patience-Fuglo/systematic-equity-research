@@ -11,7 +11,7 @@ construction, and cross-market extensions, all real-data validated.
 |---|---|
 | Execution & microstructure | done |
 | Cross-sectional alpha | done |
-| Factor attribution | not started |
+| Factor attribution | done |
 | Portfolio & risk | not started |
 | Cross-market extensions | not started |
 | Live deployment | not started |
@@ -104,4 +104,41 @@ Run the real-data demo:
 
 ```bash
 python scripts/demo_alpha.py
+```
+
+## Factor attribution
+
+`src/systematic_equity_research/alpha/factor_attribution.py`
+
+Is the cross-sectional signal's real OOS return stream genuine alpha, or
+a known Fama-French factor relabeled? Reuses
+`alpha_validation_toolkit.metrics.fama_french_alpha` directly — the same
+real OLS-based neutralization already built and tested there, not
+rebuilt a second time. The OOS returns are indexed by real
+`(date, ticker)`; this module's only new code collapses that into one
+equal-weighted real daily portfolio return series before regressing on
+Mkt-RF/SMB/HML.
+
+```python
+from systematic_equity_research.alpha import run_factor_attribution
+
+result = run_factor_attribution(oos_returns, factors)
+# result.alpha, result.betas, result.r_squared, result.is_significant("alpha")
+```
+
+**Real result:** on the real daily-aggregated OOS return stream (167
+real days), alpha is not statistically significant (t=+0.78), and
+neither is any real factor beta — the 3 factors explain almost none of
+this stream's real variance (R²=0.014). A coherent result, not a
+contradiction: this same real OOS return stream already failed the DSR
+bar in the cross-sectional alpha module, so finding nothing
+distinguishable here either — no real alpha, no real factor exposure —
+is consistent. DSR and factor attribution answer different real
+questions (better than chance vs. genuinely unique), and this signal
+clears neither on this real, small sample.
+
+Run the real-data demo:
+
+```bash
+python scripts/demo_factor_attribution.py
 ```
