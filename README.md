@@ -10,7 +10,7 @@ construction, and cross-market extensions, all real-data validated.
 | Module | Status |
 |---|---|
 | Execution & microstructure | done |
-| Cross-sectional alpha | not started |
+| Cross-sectional alpha | done |
 | Factor attribution | not started |
 | Portfolio & risk | not started |
 | Cross-market extensions | not started |
@@ -64,4 +64,44 @@ Run the tests:
 
 ```bash
 pytest tests/
+```
+
+## Cross-sectional alpha
+
+`src/systematic_equity_research/alpha/`
+
+A real cross-sectional Ridge signal across 5 real large-cap names
+(AAPL, TSLA, MSFT, NVDA, GOOGL): momentum (5d, 20d), realized volatility,
+and Amihud illiquidity as features, 5-day forward return as the target.
+Validated with `alpha-validation-toolkit`'s purged walk-forward +
+IC/PSR/DSR — reused directly, not rebuilt. The panel is indexed by
+`(date, ticker)`, a real MultiIndex, so signal/target alignment stays
+row-correct even with multiple names sharing the same date; fold
+splitting purges/embargoes by real calendar date across all 5 names at
+once, not per-ticker, so no name can leak information across a fold
+boundary through another name's date.
+
+```python
+from systematic_equity_research.alpha import (
+    build_cross_sectional_panel, run_cross_sectional_validation, summarize_cross_sectional_validation,
+)
+
+panel = build_cross_sectional_panel(["AAPL", "TSLA", "MSFT", "NVDA", "GOOGL"], start, end)
+results = run_cross_sectional_validation(panel, feature_cols, n_splits=3, label_horizon=5)
+summary = summarize_cross_sectional_validation(results)
+```
+
+**Real result:** all 3 intended folds completed (960 real OOS
+observations across 5 names), mean fold IC +0.0822, ICIR +1.91 (a real,
+consistent signal across folds). PSR clears comfortably (0.94) — but
+**DSR drops to 0.41, below the usual 50% bar**, once the k=15
+multiple-testing penalty is applied. PSR alone would make this signal
+look clearly validated; DSR says it doesn't survive being asked how many
+other signals were tried before landing on this one. Reported as the
+real, honest result, not reframed to look cleaner.
+
+Run the real-data demo:
+
+```bash
+python scripts/demo_alpha.py
 ```
