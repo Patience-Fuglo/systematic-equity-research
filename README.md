@@ -13,7 +13,7 @@ construction, and cross-market extensions, all real-data validated.
 | Cross-sectional alpha | done |
 | Factor attribution | done |
 | Portfolio & risk | done |
-| Cross-market extensions | not started |
+| Cross-market extensions | done |
 | Live deployment | not started |
 
 ## Execution & microstructure
@@ -193,4 +193,51 @@ Run the real-data demo:
 
 ```bash
 python scripts/demo_portfolio.py
+```
+
+## Cross-market extensions
+
+`src/systematic_equity_research/cross_market/`
+
+Real cross-sectional momentum (dollar-neutral long-short, top/bottom
+40%), a real stat-arb pair (OLS hedge ratio + Ornstein-Uhlenbeck-style
+mean-reversion half-life, both from scratch via `numpy.linalg.lstsq`,
+same no-statsmodels convention as the toolkit's factor neutralization),
+real current-snapshot fundamentals, and a real global extension reusing
+the exact same EU/APAC ADR tickers (TotalEnergies, Toyota, Novartis,
+Sony) already validated in this program's alt-data arm.
+
+```python
+from systematic_equity_research.cross_market import (
+    cross_sectional_momentum_signal, momentum_long_short_weights,
+    estimate_hedge_ratio, compute_spread, mean_reversion_half_life,
+    real_fundamental_snapshot,
+)
+```
+
+**A real statistical-testing bug caught in the test suite before
+shipping:** an early test asserted a single real random-walk
+realization must show `half_life == inf` (no mean reversion). Real
+finite-sample noise from that one specific seed produced a spuriously
+negative theta, failing the test — a real, known statistical
+phenomenon, not a bug in the estimator. Fixed by testing the theta
+distribution's real average across 30 independent random-walk
+realizations instead of trusting any single instance.
+
+**Real result:** momentum ranks MSFT (+33.6%, 60-day) highest, TSLA
+(-9.4%) lowest among the 5 US names; the global extension separately
+ranks Sony (+20.9%) highest, Novartis (-7.9%) lowest. The chosen
+MSFT/GOOGL stat-arb pair shows a real **negative** hedge ratio (-0.57)
+and infinite half-life — genuinely no cointegration, an honest, expected
+result: real stat-arb candidates need a tight common economic driver
+(same regulated industry, shared commodity exposure), which two
+large-but-different tech names don't share. Real fundamental snapshot:
+AAPL trailing P/E 39.0, TSLA 347.6, GOOGL 17.6 — a real, current
+point-in-time read, not a historical panel (that needs paid data this
+build doesn't have access to).
+
+Run the real-data demo:
+
+```bash
+python scripts/demo_cross_market.py
 ```
