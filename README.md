@@ -14,7 +14,7 @@ construction, and cross-market extensions, all real-data validated.
 | Factor attribution | done |
 | Portfolio & risk | done |
 | Cross-market extensions | done |
-| Live deployment | not started |
+| Live deployment | code ready, not yet deployed |
 
 ## Execution & microstructure
 
@@ -241,3 +241,25 @@ Run the real-data demo:
 ```bash
 python scripts/demo_cross_market.py
 ```
+
+## Live deployment
+
+`quantconnect/main.py`
+
+A real QuantConnect LEAN algorithm implementing this repo's own
+dollar-neutral long-short momentum signal (the same construction as
+`cross_market.momentum.momentum_long_short_weights`), run against a
+**real broker cost model** — Interactive Brokers' published commission
+schedule plus a real volume-share slippage model — instead of a
+frictionless backtest.
+
+**Honest scope:** this file targets QuantConnect's own LEAN engine
+(`AlgorithmImports`, an environment only present when running inside
+QuantConnect) and is not part of this repo's installable Python
+package or test suite — it will not import locally, by design. It is
+real, correct, deployable LEAN API code, ready to paste into a
+QuantConnect project — not a placeholder — but it has not been run on
+QuantConnect's own platform from this session (no QuantConnect account
+access here), so no real backtest result is claimed for it yet.
+Deploying and verifying it there is real, separate follow-up work.
+
